@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="container">
+    <h6>Find Friends</h6>
+    <hr />
+    <form method="post" id="form">
+      {% csrf_token %}
+      <input type="hidden" value="" name="user_id" id="user_id">
+    </form>
+      {% for user in users %}
+      <div>
+        <button onclick="formSubmit({{user.id}})" class="btn btn-primary mt-3" {% if user.is_friend %}disabled{% endif %}>Connect With {{ user.username }}</button>
+      </div>
+    {% endfor %}
+    <hr />
+  </div>
+{% endblock %}
+{% block script %}
+<script>
+  const formSubmit=(user_id)=>{
+    const form=$("#form");
+    const input=$("#user_id");
+    input.val(user_id)
+    form.submit()
+  }
+</script>
+{% endblock script %}

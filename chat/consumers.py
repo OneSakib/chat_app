@@ -4,13 +4,16 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        # self.room_group_name = f"chat_{self.room_name}"
-        self.room_group_name = f"chat_broadcast"
+        self.room_id = self.scope['url_route']['kwargs']['room_id']
+        self.room_group_name = f"chat_{self.room_id}"
+        # self.room_group_name = f"chat_broadcast"
         # Join room group
         await self.channel_layer.group_add(
             self.room_group_name, self.channel_name)
         await self.accept()
+        # Send  message to the room group
+        await self.channel_layer.group_send(
+            self.room_group_name, {"type": "handle_chat_message", "message": "You are connected to WebSocket Successfully!"})
 
     async def disconnect(self, code):
         # Leave the group

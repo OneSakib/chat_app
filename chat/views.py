@@ -6,6 +6,8 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.decorators import method_decorator
+from django.db.models import Exists, Subquery, OuterRef, Q
+from .models import *
 # Create your views here.
 
 
@@ -45,7 +47,7 @@ class UserLogin(View):
 class UserLogout(View):
     def get(self, request):
         logout(request)
-        return redirect(reverse_lazy('logins'))
+        return redirect(reverse_lazy('login'))
 
 
 # Chat
@@ -53,10 +55,50 @@ class UserLogout(View):
 @method_decorator(login_required(login_url='/login'), name='dispatch')
 class Index(View):
     def get(self, request):
-        return render(request, 'chat/index.html')
+        conversions = Conversions.objects.filter(participants=request.user)
+        context = {'conversions': conversions}
+        return render(request, 'chat/index.html', context)
+
+
+@method_decorator(login_required(login_url='/login'), name='dispatch')
+class FindFriends(View):
+    def get(self, request):
+        users = User.objects.annotate(is_friend=Exists(
+            Conversions.objects.filter(Q(participants__in=OuterRef('id')) & Q(participants__in=[request.user.id])))).exclude(id=request.user.id)
+        context = {'users': users}
+        return render(request, 'chat/find_friends.html', context)
+
+    def post(self, request):
+        user_id = request.POST.get('user_id')
+        obj = Conversions.objects.create()
+        other_user = User.objects.get(id=user_id)
+        obj.participants.add(request.user)
+        obj.participants.add(other_user)
+        obj.save()
+        return redirect(reverse_lazy('find_friends'))
+
+
+@method_decorator(login_required(login_url='/login'), name='dispatch')
+class ManageProfile(View):
+    def get(self, request):
+        u_form = UserUpdateForm(instance=request.user)
+        p_form = ProfileUpdateForm(instance=request.user.profile)
+        context = {'u_form': u_form, 'p_form': p_form}
+        return render(request, 'chat/manage_profile.html', context)
+
+    def post(self, request):
+        u_form = UserUpdateForm(data=request.POST, instance=request.user)
+        p_form = ProfileUpdateForm(
+            data=request.POST, files=request.FILES, instance=request.user.profile)
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save()
+            p_form.save()
+            return redirect(reverse_lazy('index'))
+        context = {'u_form': u_form, 'p_form': p_form}
+        return render(request, 'chat/manage_profile.html', context)
 
 
 @method_decorator(login_required(login_url='/login'), name='dispatch')
 class Room(View):
-    def get(self, request, room_name):
-        return render(request, 'chat/room.html', {'room_name': room_name})
+    def get(self, request, room_id):
+        return render(request, 'chat/room.html', {'room_id': room_id})
