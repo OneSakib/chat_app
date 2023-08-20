@@ -55,7 +55,8 @@ class UserLogout(View):
 @method_decorator(login_required(login_url='/login'), name='dispatch')
 class Index(View):
     def get(self, request):
-        conversions = Conversions.objects.filter(participants=request.user)
+        conversions = Conversions.objects.filter(
+            participants__in=[request.user])
         context = {'conversions': conversions}
         return render(request, 'chat/index.html', context)
 
