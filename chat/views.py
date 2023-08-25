@@ -55,17 +55,19 @@ class UserLogout(View):
 @method_decorator(login_required(login_url='/login'), name='dispatch')
 class Index(View):
     def get(self, request):
-        conversions = Conversions.objects.filter(
-            participants__in=[request.user])
-        context = {'conversions': conversions}
-        return render(request, 'chat/index.html', context)
+        return render(request, 'chat/index.html')
 
 
 @method_decorator(login_required(login_url='/login'), name='dispatch')
 class FindFriends(View):
     def get(self, request):
-        users = User.objects.annotate(is_friend=Exists(
-            Conversions.objects.filter(Q(participants__in=OuterRef('id')) & Q(participants__in=[request.user.id])))).exclude(id=request.user.id)
+        room_obj = Conversions.objects.filter(participants=request.user.id)
+        is_friend_list = []
+        for room_o in room_obj:
+            for room_user in room_o.participants.all():
+                if room_user.id not in is_friend_list:
+                    is_friend_list.append(room_user.id)
+        users = User.objects.exclude(id__in=is_friend_list)
         context = {'users': users}
         return render(request, 'chat/find_friends.html', context)
 
@@ -100,6 +102,9 @@ class ManageProfile(View):
 
 
 @method_decorator(login_required(login_url='/login'), name='dispatch')
-class Room(View):
-    def get(self, request, room_id):
-        return render(request, 'chat/room.html', {'room_id': room_id})
+class Chat(View):
+    def get(self, request):
+        conversions = Conversions.objects.filter(
+            participants__in=[request.user])
+        context = {'conversions': conversions}
+        return render(request, 'chat/chat.html', context)
