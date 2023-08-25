@@ -9,9 +9,12 @@
     </form>
       {% for user in users %}
       <div>
-        <button onclick="formSubmit({{user.id}})" class="btn btn-primary mt-3" {% if user.is_friend %}disabled{% endif %}>Connect With {{ user.username }}</button>
+        <button onclick="formSubmit({{user.id}})" class="btn btn-link mt-3" {% if user.is_friend %}disabled{% endif %}>Connect With {{ user.username }}</button>
       </div>
     {% endfor %}
+    {% if users|length == 0 %}
+      <p>No Users yet</p>
+    {% endif %}
     <hr />
   </div>
 {% endblock %}
